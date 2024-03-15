@@ -1,8 +1,8 @@
 /*
  * SPI_program.c
  *
- * Created: 3/5/2024 11:44:44 AM
- *  Author: Dr. Roqaia Khalid
+ * Created: 3/5/2024 
+ *  Author:  Roqaia Khalid
  */ 
 #include "STD.h"
 #include "BIT_MATH.h"
