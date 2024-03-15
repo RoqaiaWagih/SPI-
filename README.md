@@ -7,22 +7,6 @@ This repository contains a SPI (Serial Peripheral Interface) driver for the Atme
 
 The Serial Peripheral Interface (SPI) is a synchronous serial communication interface used for short-distance communication between devices. This driver provides functions to initialize and configure the SPI peripheral on the Atmega32 microcontroller, as well as transmit and receive data.
 
-## Features
-
-- Initialization and configuration of SPI peripheral
-- Transmitting and receiving data over SPI bus
-- Configurable clock polarity and phase
-- Configurable data order (MSB first or LSB first)
-
-## Usage
-
-1. Initialize the SPI peripheral using `SPI_init()` function.
-
-2. Configure SPI settings such as clock polarity, phase, and data order if needed using `SPI_configure()` function.
-
-3. Transmit data using `SPI_transmit()` function.
-
-4. Receive data using `SPI_receive()` function.
 
 ## Pins Configuration
 
@@ -66,118 +50,96 @@ This register contains the status of the SPI.
 | 6   | WCOL  | Write Collision Flag (indicates that a write operation occurred while a previous write operation was in progress) |
 | 4   | SPI2X | Double SPI Speed (for Master mode only)  |
 
-### SPDR (SPI Data Register)
+Sure, let's explain each function in detail:
 
-This register holds the data to be transmitted or received via SPI.
+### `SPI_voidInitMaster()`
 
-### Data Sheet
+This function initializes the SPI (Serial Peripheral Interface) module as a master device. It configures the SPI control registers to set up the communication parameters such as data order, clock polarity, phase, and speed.
 
-## Functions
+- **Parameters:** None
+- **Return Value:** None
+- **Usage Example:**
+  ```c
+  SPI_voidInitMaster();
+  ```
 
-### `void SPI_init()`
+#### Detailed Explanation:
+1. **Interrupt Configuration:**
+   - Disables SPI interrupt by clearing the SPIE bit in the SPCR register.
 
-Initializes the SPI peripheral by configuring SPI control registers.
+2. **Data Order Configuration:**
+   - Sets the DORD bit in the SPCR register to configure data order as LSB (Least Significant Bit) first.
 
-### `void SPI_configure(uint8_t mode, uint8_t clock_divider, uint8_t data_order)`
+3. **Master Mode Configuration:**
+   - Sets the MSTR bit in the SPCR register to configure SPI as a master device.
 
-Configures SPI settings such as mode (clock polarity and phase), clock divider, and data order.
+4. **Clock Polarity and Phase Configuration:**
+   - Sets the CPOL and CPHA bits in the SPCR register to configure clock polarity and phase.
+   - These configurations determine when data is sampled and when it is shifted.
 
-- `mode`: Specifies the SPI mode (0, 1, 2, or 3).
-- `clock_divider`: Specifies the clock divider for SPI clock rate selection.
-- `data_order`: Specifies the data order (MSB first or LSB first).
+5. **Clock Speed Configuration:**
+   - Sets the SPR0 and SPR1 bits in the SPCR register to configure clock speed.
+   - Additionally, sets the SPI2X bit in the SPSR register for double speed operation.
 
-### `void SPI_transmit(uint8_t data)`
+6. **Enable SPI:**
+   - Sets the SPE (SPI Enable) bit in the SPCR register to enable SPI communication.
 
-Transmits a byte of data over the SPI bus.
+### `SPI_voidInitSlave()`
 
-- `data`: The data byte to be transmitted.
+This function initializes the SPI module as a slave device. It configures the SPI control registers to set up the communication parameters such as data order, clock polarity, and phase.
 
-### `uint8_t SPI_receive()`
+- **Parameters:** None
+- **Return Value:** None
+- **Usage Example:**
+  ```c
+  SPI_voidInitSlave();
+  ```
 
-Receives a byte of data over the SPI bus and returns it.
+#### Detailed Explanation:
+1. **Interrupt Configuration:**
+   - Disables SPI interrupt by clearing the SPIE bit in the SPCR register.
 
-## Example
+2. **Data Order Configuration:**
+   - Sets the DORD bit in the SPCR register to configure data order as LSB (Least Significant Bit) first.
 
-```c
-#include <avr/io.h>
-#include "spi.h"
+3. **Slave Mode Configuration:**
+   - Clears the MSTR bit in the SPCR register to configure SPI as a slave device.
 
-int main() {
-    // Initialize SPI
-    SPI_init();
-    
-    // Configure SPI settings
-    SPI_configure(SPI_MODE_0, SPI_CLOCK_DIV_16, SPI_MSB_FIRST);
-    
-    // Transmit data
-    SPI_transmit(0x55);
-    
-    // Receive data
-    uint8_t receivedData = SPI_receive();
-    
-    // Do something with received data
-    
-    return 0;
-}
-```
+4. **Clock Polarity and Phase Configuration:**
+   - Sets the CPOL bit and CPHA bit in the SPCR and SPSR registers to configure clock polarity and phase.
 
-## Example Project
+5. **Enable SPI:**
+   - Sets the SPE (SPI Enable) bit in the SPCR register to enable SPI communication.
 
-Here's an example project demonstrating SPI communication between a master and a slave device.
+### `SPI_u8Transceive(u8 copy_u8TxData, u8* copy_pu8RxData)`
 
-### Master Configuration
+This function transmits data over SPI and receives data if provided with a valid pointer to a receive buffer. It waits until the transmission is complete before returning.
 
-```c
-#include <avr/io.h>
-#include "spi.h"
+- **Parameters:**
+  - `copy_u8TxData`: The data to be transmitted over SPI.
+  - `copy_pu8RxData`: Pointer to a variable where received data will be stored. Pass `NULL` if no data needs to be received.
+- **Return Value:** None
+- **Usage Example:**
+  ```c
+  u8 receivedData;
+  SPI_u8Transceive(0xFF, &receivedData);
+  ```
 
-int main() {
-    // Initialize SPI as master
-    SPI_init_master();
-    
-    // Configure SPI settings
-    SPI_configure_master(SPI_MODE_0, SPI_CLOCK_DIV_16, SPI_MSB_FIRST);
-    
-    // Enable SPI
-    SPI_enable();
-    
-    // Send data
-    uint8_t sendData = 0x55;
-    SPI_master_transmit(sendData);
-    
-    // Receive data
-    uint8_t receivedData = SPI_master_receive();
-    
-    // Do something with received data
-    
-    return 0;
-}
-```
+#### Detailed Explanation:
+1. **Transmission:**
+   - The function writes the data to be transmitted (`copy_u8TxData`) into the SPI Data Register (SPDR_REG).
+   
+2. **Wait for Transmission Completion:**
+   - It enters a busy-wait loop until the SPIF (SPI Interrupt Flag) bit in the SPSR register is set, indicating that the transmission is complete.
+   
+3. **Data Reception:**
+   - If `copy_pu8RxData` is not NULL, it reads the received data from the SPDR_REG and stores it at the memory location pointed by `copy_pu8RxData`.
+   
+4. **Error Handling:**
+   - If `copy_pu8RxData` is NULL, it does not perform data reception and may implement error handling or return an error state if needed.
 
-### Slave Configuration
+This function facilitates bidirectional data transfer over SPI and ensures synchronization between the master and slave devices.
 
-```c
-#include <avr/io.h>
-#include "spi.h"
-
-int main() {
-    // Initialize SPI as slave
-    SPI_init_slave();
-    
-    // Enable SPI
-    SPI_enable();
-    
-    // Wait for SPI data reception
-    while (!SPI_is_received());
-    
-    // Receive data
-    uint8_t receivedData = SPI_slave_receive();
-    
-    // Process received data
-    
-    return 0;
-}
-```
 
 ## Contributing
 
